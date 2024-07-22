@@ -7,8 +7,9 @@ from typing import List, Tuple, Dict, Optional
 import roar_py_interface
 import numpy as np
 
+# 415.45 Sec
 
-# 367 Sec
+
 def normalize_rad(rad: float):
     return (rad + np.pi) % (2 * np.pi) - np.pi
 
@@ -93,7 +94,7 @@ class RoarCompetitionSolution:
         delta_heading = normalize_rad(heading_to_waypoint - vehicle_rotation[2])
 
         leading_waypoint = self.maneuverable_waypoints[
-            (self.current_waypoint_idx + int(vehicle_velocity_norm / 3 + 3))
+            (self.current_waypoint_idx + int(vehicle_velocity_norm / 2.5 + 2))
             % len(self.maneuverable_waypoints)
         ]
         waypoint_vector = (leading_waypoint.location - vehicle_location)[:2]
@@ -103,7 +104,7 @@ class RoarCompetitionSolution:
         )
 
         brake_waypoint = self.maneuverable_waypoints[
-            (self.current_waypoint_idx + int(vehicle_velocity_norm * 1.5 + 1))
+            (self.current_waypoint_idx + int(vehicle_velocity_norm / 1 + 2))
             % len(self.maneuverable_waypoints)
         ]
         brake_vector = (brake_waypoint.location - vehicle_location)[:2]
@@ -111,45 +112,39 @@ class RoarCompetitionSolution:
         brake_delta_heading = normalize_rad(
             brake_heading_to_waypoint - vehicle_rotation[2]
         )
-        print(abs(brake_delta_heading))
-        print(abs(delta_heading))
+
+        print(vehicle_velocity_norm)
+        print(delta_heading)
+        print(brake_delta_heading)
         # Proportional controller to steer the vehicle towards the target waypoint
 
         steer_control = (
             (
                 (
-                    (-(1) * (delta_heading + (leading_delta_heading)) / 1.5)
+                    (-(1) * (delta_heading + leading_delta_heading * 0.5) / 1.5)
                     + (2)
                     * (
                         self.prev_delta_heading
-                        - (delta_heading + (leading_delta_heading)) / 1.5
+                        - (delta_heading + leading_delta_heading * 0.5) / 1.5
                     )
                 )
             )
             if vehicle_velocity_norm > 1e-2
             else -np.sign(delta_heading)
         )
+        print(steer_control)
         steer_control = np.clip(steer_control, -1.0, 1.0)
-        brake_turn_eval = abs(
-            brake_delta_heading * (vehicle_velocity_norm**2 / 45) / 30
-        ) + abs(
-            (delta_heading + leading_delta_heading)
-            / 1.5
-            * (vehicle_velocity_norm**2 / 65)
-            / 30
-        )
-
-        print(vehicle_velocity_norm)
-
-        brake_variable = 1 / (
-            (1 / (200 * brake_turn_eval)) + (np.e ** (-vehicle_velocity_norm / 1.5))
-        )
-
-        print(brake_variable)
 
         # Proportional controller to control the vehicle's speed towards 40 m/s
-        throttle_control = 5 * (100 - brake_variable)
-
+        throttle_control = 1 * (
+            80
+            - (abs(delta_heading * vehicle_velocity_norm) / 3)
+            - (
+                2
+                * vehicle_velocity_norm
+                * abs(brake_delta_heading * np.sqrt(vehicle_velocity_norm))
+            )
+        )
         self.prev_brake_heading = brake_delta_heading
         self.prev_delta_heading = delta_heading
         control = {
@@ -158,7 +153,7 @@ class RoarCompetitionSolution:
             "brake": np.clip(-throttle_control, 0.0, 1.0),
             "hand_brake": 0.0,
             "reverse": 0,
-            "target_gear": 3,
+            "target_gear": int(vehicle_velocity_norm / 15),
         }
         await self.vehicle.apply_action(control)
         return control

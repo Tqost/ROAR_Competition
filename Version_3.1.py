@@ -8,7 +8,7 @@ import roar_py_interface
 import numpy as np
 
 
-# 367 Sec
+# 366.8 Sec
 def normalize_rad(rad: float):
     return (rad + np.pi) % (2 * np.pi) - np.pi
 
@@ -118,11 +118,25 @@ class RoarCompetitionSolution:
         steer_control = (
             (
                 (
-                    (-(1) * (delta_heading + (leading_delta_heading)) / 1.5)
-                    + (2)
+                    (
+                        -1
+                        * (delta_heading + leading_delta_heading)
+                        * (
+                            (
+                                1
+                                / (
+                                    0.5
+                                    + ((np.e ** (-(vehicle_velocity_norm / 3)) + 15))
+                                )
+                                + 1
+                            )
+                            / 1.5
+                        )
+                    )
+                    + 2
                     * (
                         self.prev_delta_heading
-                        - (delta_heading + (leading_delta_heading)) / 1.5
+                        - (delta_heading + leading_delta_heading) / 1.5
                     )
                 )
             )
