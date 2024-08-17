@@ -118,11 +118,11 @@ class RoarCompetitionSolution:
         steer_control = (
             (
                 (
-                    (-(1) * (delta_heading + (leading_delta_heading)) / 1.5)
+                    (-(1) * (delta_heading + (leading_delta_heading)) / 2)
                     + (2)
                     * (
                         self.prev_delta_heading
-                        - (delta_heading + (leading_delta_heading)) / 1.5
+                        - (delta_heading + (leading_delta_heading)) / 2
                     )
                 )
             )

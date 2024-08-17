@@ -8,7 +8,7 @@ import roar_py_interface
 import numpy as np
 
 
-# 366.8 Sec
+# 367 Sec
 def normalize_rad(rad: float):
     return (rad + np.pi) % (2 * np.pi) - np.pi
 
@@ -115,28 +115,32 @@ class RoarCompetitionSolution:
         print(abs(delta_heading))
         # Proportional controller to steer the vehicle towards the target waypoint
 
+        leading_steer_coefficient = (
+            1 / (1.5 + np.e ** (-vehicle_velocity_norm + 45)) + 1
+        )
+        trailing_steer_coefficient = (
+            -1 / (1.5 + np.e ** (-vehicle_velocity_norm + 45)) + 1
+        )
+
         steer_control = (
             (
                 (
                     (
-                        -1
-                        * (delta_heading + leading_delta_heading)
+                        -(1)
                         * (
-                            (
-                                1
-                                / (
-                                    0.5
-                                    + ((np.e ** (-(vehicle_velocity_norm / 3)) + 15))
-                                )
-                                + 1
-                            )
-                            / 1.5
+                            delta_heading * trailing_steer_coefficient
+                            + leading_delta_heading * leading_steer_coefficient
                         )
+                        / 1.5
                     )
-                    + 2
+                    + (2)
                     * (
                         self.prev_delta_heading
-                        - (delta_heading + leading_delta_heading) / 1.5
+                        - (
+                            delta_heading * trailing_steer_coefficient
+                            + leading_delta_heading * leading_steer_coefficient
+                        )
+                        / 1.5
                     )
                 )
             )
